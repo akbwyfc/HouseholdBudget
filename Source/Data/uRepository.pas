@@ -239,9 +239,17 @@ begin
   AQuery.Connection := FDatabase.Connection;
 
   AQuery.SQL.Text :=
-    'SELECT ID, TDate, TransactionType, CategoryID, Amount, Note ' +
-    'FROM Transactions ' +
-    'ORDER BY TDate DESC';
+    'SELECT ' +
+    'T.ID, ' +
+    'T.TDate, ' +
+    'T.TransactionType, ' +
+    'T.CategoryID, ' +
+    'C.Name AS Category, ' +
+    'T.Amount, ' +
+    'T.Note ' +
+    'FROM Transactions T ' +
+    'LEFT JOIN Categories C ON T.CategoryID = C.ID ' +
+    'ORDER BY T.TDate DESC';
 
   AQuery.Open;
 end;
