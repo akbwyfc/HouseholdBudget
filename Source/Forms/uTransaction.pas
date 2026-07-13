@@ -106,15 +106,21 @@ begin
   memNote.Clear;
   if FEditMode then
   begin
+  
     FRepository.GetTransaction(
         FTransactionID,
-        dtDate.Date,
-        rgType.ItemIndex,
-        cbCategory.KeyValue,
-        Double(edtAmount.Tag),
-        memNote.Text);
+        D,
+        TT,
+        CID,
+        A,
+        N);
   
-    edtAmount.Text := FloatToStr(Double(edtAmount.Tag));
+    dtDate.Date := D;
+    rgType.ItemIndex := TT;
+    cbCategory.KeyValue := CID;
+    edtAmount.Text := FloatToStr(A);
+    memNote.Text := N;
+  
   end;
 end;
 
