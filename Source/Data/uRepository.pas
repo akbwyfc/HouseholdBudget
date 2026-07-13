@@ -47,11 +47,17 @@ type
 
     //procedure GetTransactions(ADataSet: TDataSet);
     procedure GetTransactions(AQuery: TFDQuery);
-
-    function GetMonthlyIncome(AYear, AMonth: Integer): Double;
-    function GetMonthlyExpense(AYear, AMonth: Integer): Double;
-    function GetBalance: Double;
-  end;
+    procedure GetTransaction(
+      AID: Integer;
+      out ADate: TDate;
+      out ATransactionType: Integer;
+      out ACategoryID: Integer;
+      out AAmount: Double;
+      out ANote: string);
+        function GetMonthlyIncome(AYear, AMonth: Integer): Double;
+        function GetMonthlyExpense(AYear, AMonth: Integer): Double;
+        function GetBalance: Double;
+      end;
 
 implementation
 
@@ -238,6 +244,39 @@ begin
     'ORDER BY TDate DESC';
 
   AQuery.Open;
+end;
+
+procedure TRepository.GetTransaction(
+  AID: Integer;
+  out ADate: TDate;
+  out ATransactionType: Integer;
+  out ACategoryID: Integer;
+  out AAmount: Double;
+  out ANote: string);
+var
+  Q: TFDQuery;
+begin
+  Q := NewQuery;
+  try
+    Q.SQL.Text :=
+      'SELECT * FROM Transactions ' +
+      'WHERE ID=:ID';
+
+    Q.ParamByName('ID').AsInteger := AID;
+
+    Q.Open;
+
+    if not Q.IsEmpty then
+    begin
+      ADate := Q.FieldByName('TDate').AsDateTime;
+      ATransactionType := Q.FieldByName('TransactionType').AsInteger;
+      ACategoryID := Q.FieldByName('CategoryID').AsInteger;
+      AAmount := Q.FieldByName('Amount').AsFloat;
+      ANote := Q.FieldByName('Note').AsString;
+    end;
+  finally
+    Q.Free;
+  end;
 end;
 
 {----------------------------------------------------------}
