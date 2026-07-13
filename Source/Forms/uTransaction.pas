@@ -15,7 +15,9 @@ uses
   Vcl.ComCtrls,
   Vcl.ExtCtrls,
   Vcl.Dialogs,
+  Vcl.DBCtrls,
 
+  Data.DB,
   FireDAC.Comp.Client,
 
   uRepository;
@@ -30,7 +32,8 @@ type
 
     dtDate: TDateTimePicker;
     rgType: TRadioGroup;
-    cbCategory: TComboBox;
+    cbCategory: TDBLookupComboBox; //TComboBox;
+    dsCategories: TDataSource;
     edtAmount: TEdit;
     memNote: TMemo;
 
@@ -49,7 +52,7 @@ type
     FEditMode: Boolean;
     FTransactionID: Integer;
 
-    procedure LoadCategories;
+    //procedure LoadCategories;
 
   public
     property Repository: TRepository
@@ -74,22 +77,34 @@ implementation
 
 procedure TfrmTransaction.FormShow(Sender: TObject);
 begin
+
   if FRepository = nil then
     raise Exception.Create('Repository has not been assigned.');
 
   qryCategories.Connection := FRepository.Database.Connection;
 
+  qryCategories.Close;
+
+  qryCategories.SQL.Text :=
+    'SELECT ID, Name ' +
+    'FROM Categories ' +
+    'ORDER BY Name';
+
+  qryCategories.Open;
+
+  dsCategories.DataSet := qryCategories;
+
+  cbCategory.ListSource := dsCategories;
+  cbCategory.ListField := 'Name';
+  cbCategory.KeyField := 'ID';
+
   dtDate.Date := Date;
 
-  rgType.Items.Clear;
-  rgType.Items.Add('Expense');
-  rgType.Items.Add('Income');
   rgType.ItemIndex := 0;
 
   edtAmount.Clear;
   memNote.Clear;
 
-  LoadCategories;
 end;
 
 procedure TfrmTransaction.LoadCategories;
@@ -135,8 +150,8 @@ begin
     Exit;
   end;
 
-  CategoryID :=
-    NativeInt(cbCategory.Items.Objects[cbCategory.ItemIndex]);
+  CategoryID := cbCategory.KeyValue;
+    //NativeInt(cbCategory.Items.Objects[cbCategory.ItemIndex]);
 
   if not FEditMode then
   begin
