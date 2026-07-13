@@ -104,7 +104,18 @@ begin
 
   edtAmount.Clear;
   memNote.Clear;
-
+  if FEditMode then
+  begin
+    FRepository.GetTransaction(
+        FTransactionID,
+        dtDate.Date,
+        rgType.ItemIndex,
+        cbCategory.KeyValue,
+        Double(edtAmount.Tag),
+        memNote.Text);
+  
+    edtAmount.Text := FloatToStr(Double(edtAmount.Tag));
+  end;
 end;
 
 procedure TfrmTransaction.LoadCategories;
