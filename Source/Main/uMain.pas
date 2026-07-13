@@ -22,6 +22,7 @@ uses
   uDatabase,
   uRepository;
   uCategories;
+  uTransaction;
 
 type
   TfrmMain = class(TForm)
