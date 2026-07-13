@@ -21,6 +21,7 @@ uses
 
   uDatabase,
   uRepository;
+  uCategories;
 
 type
   TfrmMain = class(TForm)
@@ -155,11 +156,13 @@ end;
 
 procedure TfrmMain.btnCategoriesClick(Sender: TObject);
 begin
-  //ShowMessage('Not implemented yet.');
   frmCategories := TfrmCategories.Create(Self);
   try
     frmCategories.Repository := FRepository;
+
     frmCategories.ShowModal;
+
+    RefreshDashboard;
   finally
     frmCategories.Free;
   end;
