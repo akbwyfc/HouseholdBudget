@@ -13,13 +13,14 @@ type
   TRepository = class
   private
     FDatabase: TDatabase;
-  property Database: TDatabase   //not sure
-  read FDatabase;
+
     function NewQuery: TFDQuery;
 
   public
     constructor Create(ADB: TDatabase);
-
+    property Database: TDatabase
+      read FDatabase;
+      
     { Categories }
     procedure AddCategory(const AName, AType: string);
     procedure DeleteCategory(AID: Integer);
