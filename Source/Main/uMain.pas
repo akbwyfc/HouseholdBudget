@@ -119,27 +119,62 @@ end;
 
 procedure TfrmMain.btnAddClick(Sender: TObject);
 begin
-  ShowMessage('Not implemented yet.');
+  //ShowMessage('Not implemented yet.');
+  frmCategories := TfrmCategories.Create(Self);
+  try
+    frmCategories.Repository := FRepository;
+    frmCategories.ShowModal;
+  finally
+    frmCategories.Free;
+  end;
 end;
 
 procedure TfrmMain.btnEditClick(Sender: TObject);
 begin
-  ShowMessage('Not implemented yet.');
+  //ShowMessage('Not implemented yet.');
+  frmCategories := TfrmCategories.Create(Self);
+  try
+    frmCategories.Repository := FRepository;
+    frmCategories.ShowModal;
+  finally
+    frmCategories.Free;
+  end;
 end;
 
 procedure TfrmMain.btnDeleteClick(Sender: TObject);
 begin
-  ShowMessage('Not implemented yet.');
+  //ShowMessage('Not implemented yet.');
+  frmCategories := TfrmCategories.Create(Self);
+  try
+    frmCategories.Repository := FRepository;
+    frmCategories.ShowModal;
+  finally
+    frmCategories.Free;
+  end;
 end;
 
 procedure TfrmMain.btnCategoriesClick(Sender: TObject);
 begin
-  ShowMessage('Not implemented yet.');
+  //ShowMessage('Not implemented yet.');
+  frmCategories := TfrmCategories.Create(Self);
+  try
+    frmCategories.Repository := FRepository;
+    frmCategories.ShowModal;
+  finally
+    frmCategories.Free;
+  end;
 end;
 
 procedure TfrmMain.btnBudgetClick(Sender: TObject);
 begin
-  ShowMessage('Not implemented yet.');
+  //ShowMessage('Not implemented yet.');
+  frmCategories := TfrmCategories.Create(Self);
+  try
+    frmCategories.Repository := FRepository;
+    frmCategories.ShowModal;
+  finally
+    frmCategories.Free;
+  end;
 end;
 
 procedure TfrmMain.btnExitClick(Sender: TObject);
