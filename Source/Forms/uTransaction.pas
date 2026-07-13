@@ -9,16 +9,15 @@ uses
   System.SysUtils,
   System.Classes,
 
-  Vcl.Graphics,
-  Vcl.Controls,
   Vcl.Forms,
-  Vcl.Dialogs,
+  Vcl.Controls,
   Vcl.StdCtrls,
   Vcl.ComCtrls,
+  Vcl.ExtCtrls,
+  Vcl.Dialogs,
 
   FireDAC.Comp.Client,
 
-  uDatabase,
   uRepository;
 
 type
@@ -30,13 +29,9 @@ type
     lblNote: TLabel;
 
     dtDate: TDateTimePicker;
-
     rgType: TRadioGroup;
-
     cbCategory: TComboBox;
-
     edtAmount: TEdit;
-
     memNote: TMemo;
 
     btnSave: TButton;
@@ -44,49 +39,45 @@ type
 
     qryCategories: TFDQuery;
 
-    procedure FormCreate(Sender: TObject);
-
+    procedure FormShow(Sender: TObject);
     procedure btnSaveClick(Sender: TObject);
     procedure btnCancelClick(Sender: TObject);
 
   private
+    FRepository: TRepository;
 
-   // FDatabase : TDatabase;
-    FRepository : TRepository;
-
-    FEditMode : Boolean;
-    FTransactionID : Integer;
+    FEditMode: Boolean;
+    FTransactionID: Integer;
 
     procedure LoadCategories;
 
   public
+    property Repository: TRepository
+      read FRepository
+      write FRepository;
 
-    property EditMode : Boolean
-      read FRepository //FEditMode
-      write FRepository; //FEditMode;
+    property EditMode: Boolean
+      read FEditMode
+      write FEditMode;
 
-    property TransactionID : Integer
+    property TransactionID: Integer
       read FTransactionID
       write FTransactionID;
-
   end;
 
 var
-  frmTransaction : TfrmTransaction;
+  frmTransaction: TfrmTransaction;
 
 implementation
 
 {$R *.dfm}
 
-procedure TfrmTransaction.FormCreate(Sender: TObject);
+procedure TfrmTransaction.FormShow(Sender: TObject);
 begin
+  if FRepository = nil then
+    raise Exception.Create('Repository has not been assigned.');
 
-  FDatabase := TDatabase.Create;
-  FDatabase.Connect;
-
-  FRepository := TRepository.Create(FDatabase);
-
-  qryCategories.Connection := FDatabase.Connection;
+  qryCategories.Connection := FRepository.Database.Connection;
 
   dtDate.Date := Date;
 
@@ -95,18 +86,17 @@ begin
   rgType.Items.Add('Income');
   rgType.ItemIndex := 0;
 
+  edtAmount.Clear;
+  memNote.Clear;
+
   LoadCategories;
-
-  FEditMode := False;
-  FTransactionID := 0;
-
 end;
 
 procedure TfrmTransaction.LoadCategories;
 begin
+  cbCategory.Clear;
 
   qryCategories.Close;
-
   qryCategories.SQL.Text :=
     'SELECT ID, Name ' +
     'FROM Categories ' +
@@ -114,67 +104,51 @@ begin
 
   qryCategories.Open;
 
-  cbCategory.Items.Clear;
-
   while not qryCategories.Eof do
   begin
-
     cbCategory.Items.AddObject(
       qryCategories.FieldByName('Name').AsString,
-      TObject(qryCategories.FieldByName('ID').AsInteger));
+      TObject(NativeInt(qryCategories.FieldByName('ID').AsInteger)));
 
     qryCategories.Next;
-
   end;
 
   if cbCategory.Items.Count > 0 then
     cbCategory.ItemIndex := 0;
-
 end;
 
 procedure TfrmTransaction.btnSaveClick(Sender: TObject);
 var
-  CategoryID : Integer;
+  CategoryID: Integer;
 begin
-
   if cbCategory.ItemIndex < 0 then
   begin
-    MessageDlg(
-      'Please select a category.',
-      mtWarning,
-      [mbOK],
-      0);
+    MessageDlg('Please select a category.',
+      mtWarning,[mbOK],0);
     Exit;
   end;
 
   if Trim(edtAmount.Text) = '' then
   begin
-    MessageDlg(
-      'Please enter an amount.',
-      mtWarning,
-      [mbOK],
-      0);
+    MessageDlg('Please enter an amount.',
+      mtWarning,[mbOK],0);
     Exit;
   end;
 
   CategoryID :=
-    Integer(cbCategory.Items.Objects[
-      cbCategory.ItemIndex]);
+    NativeInt(cbCategory.Items.Objects[cbCategory.ItemIndex]);
 
   if not FEditMode then
   begin
-
     FRepository.AddTransaction(
       dtDate.Date,
       rgType.ItemIndex,
       CategoryID,
       StrToFloat(edtAmount.Text),
       memNote.Text);
-
   end
   else
   begin
-
     FRepository.UpdateTransaction(
       FTransactionID,
       dtDate.Date,
@@ -182,11 +156,9 @@ begin
       CategoryID,
       StrToFloat(edtAmount.Text),
       memNote.Text);
-
   end;
 
   ModalResult := mrOK;
-
 end;
 
 procedure TfrmTransaction.btnCancelClick(Sender: TObject);
