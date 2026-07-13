@@ -57,13 +57,17 @@ object frmTransaction: TfrmTransaction
     Caption = 'Category'
   end
 
-  object cbCategory: TComboBox
+  object cbCategory: TDBLookupComboBox //TComboBox
     Left = 120
     Top = 120
     Width = 200
     Height = 23
     Style = csDropDownList
     TabOrder = 2
+  end
+  object dsCategories: TDataSource
+    Left = 360
+    Top = 56
   end
 
   object lblAmount: TLabel
