@@ -13,7 +13,8 @@ type
   TRepository = class
   private
     FDatabase: TDatabase;
-
+  property Database: TDatabase   //not sure
+  read FDatabase;
     function NewQuery: TFDQuery;
 
   public
