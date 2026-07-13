@@ -121,38 +121,66 @@ end;
 
 procedure TfrmMain.btnAddClick(Sender: TObject);
 begin
-  //ShowMessage('Not implemented yet.');
-  frmCategories := TfrmCategories.Create(Self);
+
+  frmTransaction := TfrmTransaction.Create(Self);
+
   try
-    frmCategories.Repository := FRepository;
-    frmCategories.ShowModal;
+
+    frmTransaction.Repository := FRepository;
+    frmTransaction.EditMode := False;
+
+    if frmTransaction.ShowModal = mrOK then
+      RefreshDashboard;
+
   finally
-    frmCategories.Free;
+    frmTransaction.Free;
   end;
+
 end;
 
 procedure TfrmMain.btnEditClick(Sender: TObject);
 begin
-  //ShowMessage('Not implemented yet.');
-  frmCategories := TfrmCategories.Create(Self);
+
+  if FQuery.IsEmpty then
+    Exit;
+
+  frmTransaction := TfrmTransaction.Create(Self);
+
   try
-    frmCategories.Repository := FRepository;
-    frmCategories.ShowModal;
+
+    frmTransaction.Repository := FRepository;
+    frmTransaction.EditMode := True;
+
+    frmTransaction.TransactionID :=
+      FQuery.FieldByName('ID').AsInteger;
+
+    if frmTransaction.ShowModal = mrOK then
+      RefreshDashboard;
+
   finally
-    frmCategories.Free;
+    frmTransaction.Free;
   end;
+
 end;
 
 procedure TfrmMain.btnDeleteClick(Sender: TObject);
 begin
-  //ShowMessage('Not implemented yet.');
-  frmCategories := TfrmCategories.Create(Self);
-  try
-    frmCategories.Repository := FRepository;
-    frmCategories.ShowModal;
-  finally
-    frmCategories.Free;
-  end;
+
+  if FQuery.IsEmpty then
+    Exit;
+
+  if MessageDlg(
+      'Delete selected transaction?',
+      mtConfirmation,
+      [mbYes,mbNo],
+      0) <> mrYes then
+      Exit;
+
+  FRepository.DeleteTransaction(
+      FQuery.FieldByName('ID').AsInteger);
+
+  RefreshDashboard;
+
 end;
 
 procedure TfrmMain.btnCategoriesClick(Sender: TObject);
