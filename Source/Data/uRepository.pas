@@ -24,7 +24,9 @@ type
     { Categories }
     procedure AddCategory(const AName, AType: string);
     procedure DeleteCategory(AID: Integer);
-    procedure GetCategories(ADataSet: TDataSet);
+    //procedure GetCategories(ADataSet: TDataSet);
+    procedure UpdateCategory(AID: Integer;  const AName: string);
+    procedure GetCategories(AQuery: TFDQuery);
 
     { Transactions }
     procedure AddTransaction(
