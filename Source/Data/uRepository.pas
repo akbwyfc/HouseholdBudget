@@ -128,6 +128,27 @@ begin
   end;
 end;
 
+procedure TRepository.UpdateCategory(
+  AID: Integer;
+  const AName: string);
+var
+  Q: TFDQuery;
+begin
+  Q := NewQuery;
+  try
+    Q.SQL.Text :=
+      'UPDATE Categories ' +
+      'SET Name=:Name ' +
+      'WHERE ID=:ID';
+
+    Q.ParamByName('ID').AsInteger := AID;
+    Q.ParamByName('Name').AsString := AName;
+
+    Q.ExecSQL;
+  finally
+    Q.Free;
+  end;
+end;
 {----------------------------------------------------------}
 { Transactions                                              }
 {----------------------------------------------------------}
