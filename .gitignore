@@ -1,0 +1,33 @@
+# Delphi
+__history/
+*.identcache
+*.local
+*.stat
+*.dsk
+*.cfg
+*.dof
+*.bak
+*.~*
+*.rsm
+*.drc
+
+# Win64
+Win32/
+Win64/
+
+# Debug
+Debug/
+
+# Packages
+*.dcp
+*.bpl
+
+# Database
+Database/Budget.db
+
+# Backup
+Backup/
+
+# IDE
+.vscode/
+.idea/
