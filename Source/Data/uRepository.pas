@@ -41,7 +41,8 @@ type
 
     procedure DeleteTransaction(AID: Integer);
 
-    procedure GetTransactions(ADataSet: TDataSet);
+    //procedure GetTransactions(ADataSet: TDataSet);
+    procedure GetTransactions(AQuery: TFDQuery);
 
     function GetMonthlyIncome(AYear, AMonth: Integer): Double;
     function GetMonthlyExpense(AYear, AMonth: Integer): Double;
@@ -201,29 +202,17 @@ begin
   end;
 end;
 
-procedure TRepository.GetTransactions(ADataSet: TDataSet);
+procedure TRepository.GetTransactions(AQuery: TFDQuery);
 begin
-  if ADataSet is TFDQuery then
-  begin
-    with TFDQuery(ADataSet) do
-    begin
-      Close;
-      Connection := FDatabase.Connection;
+  AQuery.Close;
+  AQuery.Connection := FDatabase.Connection;
 
-      SQL.Text :=
-        'SELECT T.ID,' +
-        'T.TDate,' +
-        'C.Name AS Category,' +
-        'T.Amount,' +
-        'T.Note ' +
-        'FROM Transactions T ' +
-        'LEFT JOIN Categories C ' +
-        'ON T.CategoryID=C.ID ' +
-        'ORDER BY TDate DESC';
+  AQuery.SQL.Text :=
+    'SELECT ID, TDate, TransactionType, CategoryID, Amount, Note ' +
+    'FROM Transactions ' +
+    'ORDER BY TDate DESC';
 
-      Open;
-    end;
-  end;
+  AQuery.Open;
 end;
 
 {----------------------------------------------------------}
