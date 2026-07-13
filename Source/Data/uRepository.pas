@@ -27,6 +27,7 @@ type
     { Transactions }
     procedure AddTransaction(
       ADate: TDate;
+      ATransactionType: Integer;   // 0 = Expense, 1 = Income
       ACategoryID: Integer;
       AAmount: Double;
       const ANote: string);
