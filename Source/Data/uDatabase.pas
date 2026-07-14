@@ -79,6 +79,7 @@ begin
     'CREATE TABLE IF NOT EXISTS Transactions ('+
     'ID INTEGER PRIMARY KEY AUTOINCREMENT,'+
     'TDate TEXT,'+
+    TransactionType INTEGER,
     'CategoryID INTEGER,'+
     'Amount REAL,'+
     'Note TEXT)'
