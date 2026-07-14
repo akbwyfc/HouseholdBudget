@@ -135,47 +135,39 @@ end;
 
 procedure TfrmMain.btnEditClick(Sender: TObject);
 begin
-
   if FQuery.IsEmpty then
     Exit;
 
   frmTransaction := TfrmTransaction.Create(Self);
-
   try
-
     frmTransaction.Repository := FRepository;
     frmTransaction.EditMode := True;
-
     frmTransaction.TransactionID :=
       FQuery.FieldByName('ID').AsInteger;
 
     if frmTransaction.ShowModal = mrOK then
       RefreshDashboard;
-
   finally
     frmTransaction.Free;
   end;
-
 end;
 
 procedure TfrmMain.btnDeleteClick(Sender: TObject);
 begin
-
   if FQuery.IsEmpty then
     Exit;
 
   if MessageDlg(
-      'Delete selected transaction?',
-      mtConfirmation,
-      [mbYes,mbNo],
-      0) <> mrYes then
-      Exit;
+       'Delete selected transaction?',
+       mtConfirmation,
+       [mbYes, mbNo],
+       0) <> mrYes then
+    Exit;
 
   FRepository.DeleteTransaction(
-      FQuery.FieldByName('ID').AsInteger);
+    FQuery.FieldByName('ID').AsInteger);
 
   RefreshDashboard;
-
 end;
 
 procedure TfrmMain.btnCategoriesClick(Sender: TObject);
