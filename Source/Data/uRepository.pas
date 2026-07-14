@@ -4,8 +4,6 @@ interface
 
 uses
   System.SysUtils,
-  System.Classes,
-  Data.DB,
   FireDAC.Comp.Client,
   uDatabase;
 
@@ -17,21 +15,23 @@ type
     function NewQuery: TFDQuery;
 
   public
-    constructor Create(ADB: TDatabase);
+    constructor Create(ADatabase: TDatabase);
+    destructor Destroy; override;
+
     property Database: TDatabase
       read FDatabase;
-      
+
     { Categories }
-    procedure AddCategory(const AName, AType: string);
-    procedure DeleteCategory(AID: Integer);
-    //procedure GetCategories(ADataSet: TDataSet);
-    procedure UpdateCategory(AID: Integer;  const AName: string);
     procedure GetCategories(AQuery: TFDQuery);
+    procedure AddCategory(
+       const AName: string; const AType: string); //procedure AddCategory(const AName: string);
+    procedure UpdateCategory(AID: Integer; const AName: string);
+    procedure DeleteCategory(AID: Integer);
 
     { Transactions }
     procedure AddTransaction(
       ADate: TDate;
-      ATransactionType: Integer;   // 0 = Expense, 1 = Income
+      ATransactionType: Integer;
       ACategoryID: Integer;
       AAmount: Double;
       const ANote: string);
@@ -39,14 +39,13 @@ type
     procedure UpdateTransaction(
       AID: Integer;
       ADate: TDate;
+      ATransactionType: Integer;
       ACategoryID: Integer;
       AAmount: Double;
       const ANote: string);
 
     procedure DeleteTransaction(AID: Integer);
 
-    //procedure GetTransactions(ADataSet: TDataSet);
-    procedure GetTransactions(AQuery: TFDQuery);
     procedure GetTransaction(
       AID: Integer;
       out ADate: TDate;
@@ -54,21 +53,31 @@ type
       out ACategoryID: Integer;
       out AAmount: Double;
       out ANote: string);
-        function GetMonthlyIncome(AYear, AMonth: Integer): Double;
-        function GetMonthlyExpense(AYear, AMonth: Integer): Double;
-        function GetBalance: Double;
-      end;
+
+    procedure GetTransactions(AQuery: TFDQuery);
+
+  end;
 
 implementation
 
-uses
-  System.DateUtils;
+{************************************************}
+{ Constructor / Destructor                       }
+{************************************************}
 
-constructor TRepository.Create(ADB: TDatabase);
+constructor TRepository.Create(ADatabase: TDatabase);
 begin
   inherited Create;
-  FDatabase := ADB;
+  FDatabase := ADatabase;
 end;
+
+destructor TRepository.Destroy;
+begin
+  inherited;
+end;
+
+{************************************************}
+{ Create a temporary query                       }
+{************************************************}
 
 function TRepository.NewQuery: TFDQuery;
 begin
@@ -76,61 +85,45 @@ begin
   Result.Connection := FDatabase.Connection;
 end;
 
-{----------------------------------------------------------}
-{ Categories                                                }
-{----------------------------------------------------------}
+{************************************************}
+{ Categories                                     }
+{************************************************}
 
-procedure TRepository.AddCategory(
-  const AName,
-  AType: string);
+procedure TRepository.GetCategories(AQuery: TFDQuery);
+begin
+  AQuery.Close;
+
+  AQuery.Connection := FDatabase.Connection;
+
+  AQuery.SQL.Text :=
+    'SELECT ' +
+    'ID, ' +
+    'Name, ' +
+    'Type ' +
+    'FROM Categories ' +
+    'ORDER BY Name';
+
+  AQuery.Open;
+end;
+
+procedure TRepository.AddCategory(const AName: string);
 var
   Q: TFDQuery;
 begin
   Q := NewQuery;
   try
-    Q.SQL.Text :=
-      'INSERT INTO Categories(Name,Type) ' +
-      'VALUES(:N,:T)';
 
-    Q.ParamByName('N').AsString := AName;
-    Q.ParamByName('T').AsString := AType;
+    Q.SQL.Text :=
+      'INSERT INTO Categories ' +
+      '(Name) ' +
+      'VALUES (:Name)';
+
+    Q.ParamByName('Name').AsString := Trim(AName);
 
     Q.ExecSQL;
+
   finally
     Q.Free;
-  end;
-end;
-
-procedure TRepository.DeleteCategory(AID: Integer);
-var
-  Q: TFDQuery;
-begin
-  Q := NewQuery;
-  try
-    Q.SQL.Text :=
-      'DELETE FROM Categories WHERE ID=:ID';
-
-    Q.ParamByName('ID').AsInteger := AID;
-
-    Q.ExecSQL;
-  finally
-    Q.Free;
-  end;
-end;
-
-procedure TRepository.GetCategories(ADataSet: TDataSet);
-begin
-  if ADataSet is TFDQuery then
-  begin
-    with TFDQuery(ADataSet) do
-    begin
-      Close;
-      Connection := FDatabase.Connection;
-      SQL.Text :=
-        'SELECT * FROM Categories ' +
-        'ORDER BY Type,Name';
-      Open;
-    end;
   end;
 end;
 
@@ -142,25 +135,49 @@ var
 begin
   Q := NewQuery;
   try
+
     Q.SQL.Text :=
       'UPDATE Categories ' +
       'SET Name=:Name ' +
       'WHERE ID=:ID';
 
     Q.ParamByName('ID').AsInteger := AID;
-    Q.ParamByName('Name').AsString := AName;
+    Q.ParamByName('Name').AsString := Trim(AName);
 
     Q.ExecSQL;
+
   finally
     Q.Free;
   end;
 end;
-{----------------------------------------------------------}
-{ Transactions                                              }
-{----------------------------------------------------------}
+
+procedure TRepository.DeleteCategory(AID: Integer);
+var
+  Q: TFDQuery;
+begin
+  Q := NewQuery;
+  try
+
+    Q.SQL.Text :=
+      'DELETE FROM Categories ' +
+      'WHERE ID=:ID';
+
+    Q.ParamByName('ID').AsInteger := AID;
+
+    Q.ExecSQL;
+
+  finally
+    Q.Free;
+  end;
+end;
+
+{************************************************}
+{ Transactions                                   }
+{************************************************}
 
 procedure TRepository.AddTransaction(
   ADate: TDate;
+  ATransactionType: Integer;
   ACategoryID: Integer;
   AAmount: Double;
   const ANote: string);
@@ -171,13 +188,14 @@ begin
   try
     Q.SQL.Text :=
       'INSERT INTO Transactions ' +
-      '(TDate,CategoryID,Amount,Note) ' +
-      'VALUES(:D,:C,:A,:N)';
+      '(TDate, TransactionType, CategoryID, Amount, Note) ' +
+      'VALUES (:TDate, :TType, :CategoryID, :Amount, :Note)';
 
-    Q.ParamByName('D').AsDate := ADate;
-    Q.ParamByName('C').AsInteger := ACategoryID;
-    Q.ParamByName('A').AsFloat := AAmount;
-    Q.ParamByName('N').AsString := ANote;
+    Q.ParamByName('TDate').AsDate := ADate;
+    Q.ParamByName('TType').AsInteger := ATransactionType;
+    Q.ParamByName('CategoryID').AsInteger := ACategoryID;
+    Q.ParamByName('Amount').AsFloat := AAmount;
+    Q.ParamByName('Note').AsString := Trim(ANote);
 
     Q.ExecSQL;
   finally
@@ -188,6 +206,7 @@ end;
 procedure TRepository.UpdateTransaction(
   AID: Integer;
   ADate: TDate;
+  ATransactionType: Integer;
   ACategoryID: Integer;
   AAmount: Double;
   const ANote: string);
@@ -198,17 +217,19 @@ begin
   try
     Q.SQL.Text :=
       'UPDATE Transactions SET ' +
-      'TDate=:D,' +
-      'CategoryID=:C,' +
-      'Amount=:A,' +
-      'Note=:N ' +
+      'TDate=:TDate, ' +
+      'TransactionType=:TType, ' +
+      'CategoryID=:CategoryID, ' +
+      'Amount=:Amount, ' +
+      'Note=:Note ' +
       'WHERE ID=:ID';
 
     Q.ParamByName('ID').AsInteger := AID;
-    Q.ParamByName('D').AsDate := ADate;
-    Q.ParamByName('C').AsInteger := ACategoryID;
-    Q.ParamByName('A').AsFloat := AAmount;
-    Q.ParamByName('N').AsString := ANote;
+    Q.ParamByName('TDate').AsDate := ADate;
+    Q.ParamByName('TType').AsInteger := ATransactionType;
+    Q.ParamByName('CategoryID').AsInteger := ACategoryID;
+    Q.ParamByName('Amount').AsFloat := AAmount;
+    Q.ParamByName('Note').AsString := Trim(ANote);
 
     Q.ExecSQL;
   finally
@@ -223,7 +244,8 @@ begin
   Q := NewQuery;
   try
     Q.SQL.Text :=
-      'DELETE FROM Transactions WHERE ID=:ID';
+      'DELETE FROM Transactions ' +
+      'WHERE ID=:ID';
 
     Q.ParamByName('ID').AsInteger := AID;
 
@@ -231,27 +253,6 @@ begin
   finally
     Q.Free;
   end;
-end;
-
-procedure TRepository.GetTransactions(AQuery: TFDQuery);
-begin
-  AQuery.Close;
-  AQuery.Connection := FDatabase.Connection;
-
-  AQuery.SQL.Text :=
-    'SELECT ' +
-    'T.ID, ' +
-    'T.TDate, ' +
-    'T.TransactionType, ' +
-    'T.CategoryID, ' +
-    'C.Name AS Category, ' +
-    'T.Amount, ' +
-    'T.Note ' +
-    'FROM Transactions T ' +
-    'LEFT JOIN Categories C ON T.CategoryID = C.ID ' +
-    'ORDER BY T.TDate DESC';
-
-  AQuery.Open;
 end;
 
 procedure TRepository.GetTransaction(
@@ -274,86 +275,41 @@ begin
 
     Q.Open;
 
-    if not Q.IsEmpty then
-    begin
-      ADate := Q.FieldByName('TDate').AsDateTime;
-      ATransactionType := Q.FieldByName('TransactionType').AsInteger;
-      ACategoryID := Q.FieldByName('CategoryID').AsInteger;
-      AAmount := Q.FieldByName('Amount').AsFloat;
-      ANote := Q.FieldByName('Note').AsString;
-    end;
+    if Q.IsEmpty then
+      Exit;
+
+    ADate := Q.FieldByName('TDate').AsDateTime;
+    ATransactionType := Q.FieldByName('TransactionType').AsInteger;
+    ACategoryID := Q.FieldByName('CategoryID').AsInteger;
+    AAmount := Q.FieldByName('Amount').AsFloat;
+    ANote := Q.FieldByName('Note').AsString;
+
   finally
     Q.Free;
   end;
 end;
 
-{----------------------------------------------------------}
-{ Statistics                                                }
-{----------------------------------------------------------}
-
-function TRepository.GetMonthlyIncome(
-  AYear,
-  AMonth: Integer): Double;
-var
-  Q: TFDQuery;
+procedure TRepository.GetTransactions(AQuery: TFDQuery);
 begin
-  Result := 0;
+  AQuery.Close;
 
-  Q := NewQuery;
-  try
-    Q.SQL.Text :=
-      'SELECT SUM(T.Amount) Total ' +
-      'FROM Transactions T ' +
-      'JOIN Categories C ON C.ID=T.CategoryID ' +
-      'WHERE C.Type=''Income'' ' +
-      'AND strftime(''%Y'',T.TDate)=:Y ' +
-      'AND strftime(''%m'',T.TDate)=:M';
+  AQuery.Connection := FDatabase.Connection;
 
-    Q.ParamByName('Y').AsString := Format('%.4d',[AYear]);
-    Q.ParamByName('M').AsString := Format('%.2d',[AMonth]);
+  AQuery.SQL.Text :=
+    'SELECT ' +
+    'T.ID, ' +
+    'T.TDate, ' +
+    'T.TransactionType, ' +
+    'T.CategoryID, ' +
+    'C.Name AS Category, ' +
+    'T.Amount, ' +
+    'T.Note ' +
+    'FROM Transactions T ' +
+    'LEFT JOIN Categories C ' +
+    'ON T.CategoryID = C.ID ' +
+    'ORDER BY T.TDate DESC';
 
-    Q.Open;
-
-    Result := Q.Fields[0].AsFloat;
-  finally
-    Q.Free;
-  end;
-end;
-
-function TRepository.GetMonthlyExpense(
-  AYear,
-  AMonth: Integer): Double;
-var
-  Q: TFDQuery;
-begin
-  Result := 0;
-
-  Q := NewQuery;
-  try
-    Q.SQL.Text :=
-      'SELECT SUM(T.Amount) Total ' +
-      'FROM Transactions T ' +
-      'JOIN Categories C ON C.ID=T.CategoryID ' +
-      'WHERE C.Type=''Expense'' ' +
-      'AND strftime(''%Y'',T.TDate)=:Y ' +
-      'AND strftime(''%m'',T.TDate)=:M';
-
-    Q.ParamByName('Y').AsString := Format('%.4d',[AYear]);
-    Q.ParamByName('M').AsString := Format('%.2d',[AMonth]);
-
-    Q.Open;
-
-    Result := Q.Fields[0].AsFloat;
-  finally
-    Q.Free;
-  end;
-end;
-
-function TRepository.GetBalance: Double;
-begin
-  Result :=
-    GetMonthlyIncome(YearOf(Date), MonthOf(Date)) -
-    GetMonthlyExpense(YearOf(Date), MonthOf(Date));
+  AQuery.Open;
 end;
 
 end.
