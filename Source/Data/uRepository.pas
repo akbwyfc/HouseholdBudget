@@ -56,6 +56,72 @@ type
 
     procedure GetTransactions(AQuery: TFDQuery);
 
+    {************************************************}
+    { Budgets                                        }
+    {************************************************}
+    
+    procedure AddBudget(
+      ACategoryID: Integer;
+      const ABudgetMonth: string;
+      AAmount: Double);
+    
+    procedure UpdateBudget(
+      AID: Integer;
+      ACategoryID: Integer;
+      const ABudgetMonth: string;
+      AAmount: Double);
+    
+    procedure DeleteBudget(
+      AID: Integer);
+    
+    procedure GetBudgets(AQuery: TFDQuery);
+    
+    {************************************************}
+    { Statistics                                     }
+    {************************************************}
+    
+    function GetMonthlyIncome(
+      AYear,
+      AMonth: Integer): Double;
+    
+    function GetMonthlyExpense(
+      AYear,
+      AMonth: Integer): Double;
+    
+    function GetBalance: Double;
+    
+    function GetYearlyIncome(
+      AYear: Integer): Double;
+    
+    function GetYearlyExpense(
+      AYear: Integer): Double;
+    {************************************************}
+    { Reports                                        }
+    {************************************************}
+    
+    procedure GetMonthlyReport(
+      AYear,
+      AMonth: Integer;
+      AQuery: TFDQuery);
+    
+    procedure GetTransactionsByDateRange(
+      const AStartDate,
+      AEndDate: TDate;
+      AQuery: TFDQuery);
+    
+    procedure GetTransactionsByCategory(
+      ACategoryID: Integer;
+      AQuery: TFDQuery);
+    
+    procedure GetCategorySummary(
+      AYear,
+      AMonth: Integer;
+      AQuery: TFDQuery);
+    
+    procedure GetBudgetVsActual(
+      const ABudgetMonth: string;
+      AQuery: TFDQuery);      
+
   end;
 
 implementation
@@ -310,6 +376,432 @@ begin
     'ORDER BY T.TDate DESC';
 
   AQuery.Open;
+end;
+
+{************************************************}
+{ Budgets                                        }
+{************************************************}
+
+procedure TRepository.AddBudget(
+  ACategoryID: Integer;
+  const ABudgetMonth: string;
+  AAmount: Double);
+var
+  Q: TFDQuery;
+begin
+  Q := NewQuery;
+  try
+
+    Q.SQL.Text :=
+      'INSERT INTO Budgets ' +
+      '(CategoryID,BudgetMonth,Amount) ' +
+      'VALUES (:CategoryID,:BudgetMonth,:Amount)';
+
+    Q.ParamByName('CategoryID').AsInteger := ACategoryID;
+    Q.ParamByName('BudgetMonth').AsString := ABudgetMonth;
+    Q.ParamByName('Amount').AsFloat := AAmount;
+
+    Q.ExecSQL;
+
+  finally
+    Q.Free;
+  end;
+end;
+
+procedure TRepository.UpdateBudget(
+  AID: Integer;
+  ACategoryID: Integer;
+  const ABudgetMonth: string;
+  AAmount: Double);
+var
+  Q: TFDQuery;
+begin
+  Q := NewQuery;
+  try
+
+    Q.SQL.Text :=
+      'UPDATE Budgets SET ' +
+      'CategoryID=:CategoryID,' +
+      'BudgetMonth=:BudgetMonth,' +
+      'Amount=:Amount ' +
+      'WHERE ID=:ID';
+
+    Q.ParamByName('ID').AsInteger := AID;
+    Q.ParamByName('CategoryID').AsInteger := ACategoryID;
+    Q.ParamByName('BudgetMonth').AsString := ABudgetMonth;
+    Q.ParamByName('Amount').AsFloat := AAmount;
+
+    Q.ExecSQL;
+
+  finally
+    Q.Free;
+  end;
+end;
+
+procedure TRepository.DeleteBudget(AID: Integer);
+var
+  Q: TFDQuery;
+begin
+  Q := NewQuery;
+  try
+
+    Q.SQL.Text :=
+      'DELETE FROM Budgets WHERE ID=:ID';
+
+    Q.ParamByName('ID').AsInteger := AID;
+
+    Q.ExecSQL;
+
+  finally
+    Q.Free;
+  end;
+end;
+
+procedure TRepository.GetBudgets(AQuery: TFDQuery);
+begin
+
+  AQuery.Close;
+
+  AQuery.Connection := FDatabase.Connection;
+
+  AQuery.SQL.Text :=
+    'SELECT ' +
+    'B.ID,' +
+    'C.Name AS Category,' +
+    'B.BudgetMonth,' +
+    'B.Amount ' +
+    'FROM Budgets B ' +
+    'LEFT JOIN Categories C ' +
+    'ON B.CategoryID=C.ID ' +
+    'ORDER BY B.BudgetMonth DESC,C.Name';
+
+  AQuery.Open;
+
+end;
+
+{************************************************}
+{ Statistics                                     }
+{************************************************}
+
+function TRepository.GetMonthlyIncome(
+  AYear,
+  AMonth: Integer): Double;
+var
+  Q: TFDQuery;
+begin
+
+  Result := 0;
+
+  Q := NewQuery;
+  try
+
+    Q.SQL.Text :=
+      'SELECT IFNULL(SUM(Amount),0) Total '+
+      'FROM Transactions '+
+      'WHERE TransactionType=1 '+
+      'AND strftime(''%Y'',TDate)=:Y '+
+      'AND strftime(''%m'',TDate)=:M';
+
+    Q.ParamByName('Y').AsString :=
+      Format('%.4d',[AYear]);
+
+    Q.ParamByName('M').AsString :=
+      Format('%.2d',[AMonth]);
+
+    Q.Open;
+
+    Result := Q.FieldByName('Total').AsFloat;
+
+  finally
+    Q.Free;
+  end;
+
+end;
+
+function TRepository.GetMonthlyExpense(
+  AYear,
+  AMonth: Integer): Double;
+var
+  Q: TFDQuery;
+begin
+
+  Result := 0;
+
+  Q := NewQuery;
+  try
+
+    Q.SQL.Text :=
+      'SELECT IFNULL(SUM(Amount),0) Total '+
+      'FROM Transactions '+
+      'WHERE TransactionType=0 '+
+      'AND strftime(''%Y'',TDate)=:Y '+
+      'AND strftime(''%m'',TDate)=:M';
+
+    Q.ParamByName('Y').AsString :=
+      Format('%.4d',[AYear]);
+
+    Q.ParamByName('M').AsString :=
+      Format('%.2d',[AMonth]);
+
+    Q.Open;
+
+    Result := Q.FieldByName('Total').AsFloat;
+
+  finally
+    Q.Free;
+  end;
+
+end;
+
+function TRepository.GetBalance: Double;
+var
+  Q: TFDQuery;
+begin
+
+  Result := 0;
+
+  Q := NewQuery;
+  try
+
+    Q.SQL.Text :=
+      'SELECT '+
+      'IFNULL('+
+      'SUM(CASE WHEN TransactionType=1 THEN Amount ELSE -Amount END),0) Balance '+
+      'FROM Transactions';
+
+    Q.Open;
+
+    Result := Q.FieldByName('Balance').AsFloat;
+
+  finally
+    Q.Free;
+  end;
+
+end;
+
+function TRepository.GetYearlyIncome(
+  AYear: Integer): Double;
+var
+  Q: TFDQuery;
+begin
+
+  Result := 0;
+
+  Q := NewQuery;
+  try
+
+    Q.SQL.Text :=
+      'SELECT IFNULL(SUM(Amount),0) Total '+
+      'FROM Transactions '+
+      'WHERE TransactionType=1 '+
+      'AND strftime(''%Y'',TDate)=:Y';
+
+    Q.ParamByName('Y').AsString :=
+      Format('%.4d',[AYear]);
+
+    Q.Open;
+
+    Result := Q.FieldByName('Total').AsFloat;
+
+  finally
+    Q.Free;
+  end;
+
+end;
+
+function TRepository.GetYearlyExpense(
+  AYear: Integer): Double;
+var
+  Q: TFDQuery;
+begin
+
+  Result := 0;
+
+  Q := NewQuery;
+  try
+
+    Q.SQL.Text :=
+      'SELECT IFNULL(SUM(Amount),0) Total '+
+      'FROM Transactions '+
+      'WHERE TransactionType=0 '+
+      'AND strftime(''%Y'',TDate)=:Y';
+
+    Q.ParamByName('Y').AsString :=
+      Format('%.4d',[AYear]);
+
+    Q.Open;
+
+    Result := Q.FieldByName('Total').AsFloat;
+
+  finally
+    Q.Free;
+  end;
+
+end;
+
+{************************************************}
+{ Monthly Report                                }
+{************************************************}
+
+procedure TRepository.GetMonthlyReport(
+  AYear,
+  AMonth: Integer;
+  AQuery: TFDQuery);
+begin
+
+  AQuery.Close;
+  AQuery.Connection := FDatabase.Connection;
+
+  AQuery.SQL.Text :=
+    'SELECT ' +
+    'T.ID, ' +
+    'T.TDate, ' +
+    'CASE T.TransactionType ' +
+    'WHEN 0 THEN ''Expense'' ' +
+    'ELSE ''Income'' END AS Type, ' +
+    'C.Name AS Category, ' +
+    'T.Amount, ' +
+    'T.Note ' +
+    'FROM Transactions T ' +
+    'LEFT JOIN Categories C ' +
+    'ON T.CategoryID=C.ID ' +
+    'WHERE strftime(''%Y'',T.TDate)=:Y ' +
+    'AND strftime(''%m'',T.TDate)=:M ' +
+    'ORDER BY T.TDate';
+
+  AQuery.ParamByName('Y').AsString :=
+    Format('%.4d',[AYear]);
+
+  AQuery.ParamByName('M').AsString :=
+    Format('%.2d',[AMonth]);
+
+  AQuery.Open;
+
+end;
+
+{************************************************}
+{ Date Range                                     }
+{************************************************}
+
+procedure TRepository.GetTransactionsByDateRange(
+  const AStartDate,
+  AEndDate: TDate;
+  AQuery: TFDQuery);
+begin
+
+  AQuery.Close;
+  AQuery.Connection := FDatabase.Connection;
+
+  AQuery.SQL.Text :=
+    'SELECT ' +
+    'T.ID,' +
+    'T.TDate,' +
+    'C.Name Category,' +
+    'T.Amount,' +
+    'T.Note ' +
+    'FROM Transactions T ' +
+    'LEFT JOIN Categories C ' +
+    'ON T.CategoryID=C.ID ' +
+    'WHERE date(T.TDate) BETWEEN :D1 AND :D2 ' +
+    'ORDER BY T.TDate';
+
+  AQuery.ParamByName('D1').AsDate := AStartDate;
+  AQuery.ParamByName('D2').AsDate := AEndDate;
+
+  AQuery.Open;
+
+end;
+
+{************************************************}
+{ Category Transactions                          }
+{************************************************}
+
+procedure TRepository.GetTransactionsByCategory(
+  ACategoryID: Integer;
+  AQuery: TFDQuery);
+begin
+
+  AQuery.Close;
+  AQuery.Connection := FDatabase.Connection;
+
+  AQuery.SQL.Text :=
+    'SELECT * ' +
+    'FROM Transactions ' +
+    'WHERE CategoryID=:ID ' +
+    'ORDER BY TDate';
+
+  AQuery.ParamByName('ID').AsInteger := ACategoryID;
+
+  AQuery.Open;
+
+end;
+
+{************************************************}
+{ Category Summary                               }
+{************************************************}
+
+procedure TRepository.GetCategorySummary(
+  AYear,
+  AMonth: Integer;
+  AQuery: TFDQuery);
+begin
+
+  AQuery.Close;
+  AQuery.Connection := FDatabase.Connection;
+
+  AQuery.SQL.Text :=
+    'SELECT ' +
+    'C.Name Category,' +
+    'SUM(T.Amount) Total ' +
+    'FROM Transactions T ' +
+    'LEFT JOIN Categories C ' +
+    'ON T.CategoryID=C.ID ' +
+    'WHERE strftime(''%Y'',T.TDate)=:Y ' +
+    'AND strftime(''%m'',T.TDate)=:M ' +
+    'GROUP BY C.Name ' +
+    'ORDER BY Total DESC';
+
+  AQuery.ParamByName('Y').AsString :=
+    Format('%.4d',[AYear]);
+
+  AQuery.ParamByName('M').AsString :=
+    Format('%.2d',[AMonth]);
+
+  AQuery.Open;
+
+end;
+
+{************************************************}
+{ Budget vs Actual                               }
+{************************************************}
+
+procedure TRepository.GetBudgetVsActual(
+  const ABudgetMonth: string;
+  AQuery: TFDQuery);
+begin
+
+  AQuery.Close;
+  AQuery.Connection := FDatabase.Connection;
+
+  AQuery.SQL.Text :=
+    'SELECT ' +
+    'C.Name Category,' +
+    'B.Amount Budget,' +
+    'IFNULL(SUM(T.Amount),0) Actual ' +
+    'FROM Budgets B ' +
+    'LEFT JOIN Categories C ' +
+    'ON B.CategoryID=C.ID ' +
+    'LEFT JOIN Transactions T ' +
+    'ON B.CategoryID=T.CategoryID ' +
+    'AND strftime(''%Y-%m'',T.TDate)=B.BudgetMonth ' +
+    'WHERE B.BudgetMonth=:M ' +
+    'GROUP BY C.Name,B.Amount ' +
+    'ORDER BY C.Name';
+
+  AQuery.ParamByName('M').AsString := ABudgetMonth;
+
+  AQuery.Open;
+
 end;
 
 end.
