@@ -7,6 +7,8 @@ object frmMain: TfrmMain
   Position = poScreenCenter
   OnCreate = FormCreate
   OnDestroy = FormDestroy
+  PixelsPerInch = 96
+  TextHeight = 15
 
   object pnlTop: TPanel
     Left = 0
@@ -16,85 +18,58 @@ object frmMain: TfrmMain
     Align = alTop
     TabOrder = 0
 
+    object lblIncomeTitle: TLabel
+      Left = 20
+      Top = 10
+      Width = 42
+      Height = 15
+      Caption = 'Income'
+    end
+
     object lblIncome: TLabel
       Left = 20
-      Top = 12
-      Caption = 'Income : 0'
+      Top = 35
+      Width = 80
+      Height = 15
+      Caption = '0.00'
+      Font.Style = [fsBold]
+      ParentFont = False
+    end
+
+    object lblExpenseTitle: TLabel
+      Left = 250
+      Top = 10
+      Width = 49
+      Height = 15
+      Caption = 'Expense'
     end
 
     object lblExpense: TLabel
-      Left = 20
-      Top = 30
-      Caption = 'Expense : 0'
+      Left = 250
+      Top = 35
+      Width = 80
+      Height = 15
+      Caption = '0.00'
+      Font.Style = [fsBold]
+      ParentFont = False
+    end
+
+    object lblBalanceTitle: TLabel
+      Left = 500
+      Top = 10
+      Width = 45
+      Height = 15
+      Caption = 'Balance'
     end
 
     object lblBalance: TLabel
-      Left = 20
-      Top = 48
-      Caption = 'Balance : 0'
-    end
-  end
-
-  object pnlButtons: TPanel
-    Left = 0
-    Top = 550
-    Width = 900
-    Height = 50
-    Align = alBottom
-    TabOrder = 2
-
-    object btnAdd: TButton
-      Left = 10
-      Top = 10
-      Width = 75
-      Height = 25
-      Caption = 'Add'
-      OnClick = btnAddClick
-    end
-
-    object btnEdit: TButton
-      Left = 95
-      Top = 10
-      Width = 75
-      Height = 25
-      Caption = 'Edit'
-      OnClick = btnEditClick
-    end
-
-    object btnDelete: TButton
-      Left = 180
-      Top = 10
-      Width = 75
-      Height = 25
-      Caption = 'Delete'
-      OnClick = btnDeleteClick
-    end
-
-    object btnCategories: TButton
-      Left = 265
-      Top = 10
-      Width = 90
-      Height = 25
-      Caption = 'Categories'
-      OnClick = btnCategoriesClick
-    end
-
-    object btnBudget: TButton
-      Left = 365
-      Top = 10
-      Width = 75
-      Height = 25
-      Caption = 'Budget'
-      OnClick = btnBudgetClick
-    end
-
-    object btnExit: TButton
-      Left = 800
-      Top = 10
-      Width = 75
-      Height = 25
-      Caption = 'Exit'
-      OnClick = btnExitClick
+      Left = 500
+      Top = 35
+      Width = 80
+      Height = 15
+      Caption = '0.00'
+      Font.Style = [fsBold]
+      ParentFont = False
     end
 
   end
@@ -103,15 +78,105 @@ object frmMain: TfrmMain
     Left = 0
     Top = 70
     Width = 900
-    Height = 480
+    Height = 470
     Align = alClient
     DataSource = dsTransactions
+    ReadOnly = True
+    Options = [dgTitles, dgIndicator, dgColumnResize,
+               dgColLines, dgRowLines, dgTabs,
+               dgRowSelect, dgAlwaysShowSelection]
     TabOrder = 1
   end
 
+  object pnlBottom: TPanel
+    Left = 0
+    Top = 540
+    Width = 900
+    Height = 60
+    Align = alBottom
+    TabOrder = 2
+
+    object btnAdd: TButton
+      Left = 10
+      Top = 15
+      Width = 90
+      Height = 30
+      Caption = 'Add'
+      TabOrder = 0
+      OnClick = btnAddClick
+    end
+
+    object btnEdit: TButton
+      Left = 110
+      Top = 15
+      Width = 90
+      Height = 30
+      Caption = 'Edit'
+      TabOrder = 1
+      OnClick = btnEditClick
+    end
+
+    object btnDelete: TButton
+      Left = 210
+      Top = 15
+      Width = 90
+      Height = 30
+      Caption = 'Delete'
+      TabOrder = 2
+      OnClick = btnDeleteClick
+    end
+
+    object btnCategories: TButton
+      Left = 330
+      Top = 15
+      Width = 100
+      Height = 30
+      Caption = 'Categories'
+      TabOrder = 3
+      OnClick = btnCategoriesClick
+    end
+
+    object btnBudget: TButton
+      Left = 450
+      Top = 15
+      Width = 90
+      Height = 30
+      Caption = 'Budget'
+      TabOrder = 4
+      OnClick = btnBudgetClick
+    end
+
+    object btnReports: TButton
+      Left = 550
+      Top = 15
+      Width = 90
+      Height = 30
+      Caption = 'Reports'
+      TabOrder = 5
+      OnClick = btnReportsClick
+    end
+
+    object btnExit: TButton
+      Left = 790
+      Top = 15
+      Width = 90
+      Height = 30
+      Caption = 'Exit'
+      TabOrder = 6
+      OnClick = btnExitClick
+    end
+
+  end
+
   object dsTransactions: TDataSource
-    Left = 720
-    Top = 16
+    DataSet = qryTransactions
+    Left = 760
+    Top = 88
+  end
+
+  object qryTransactions: TFDQuery
+    Left = 840
+    Top = 88
   end
 
 end
