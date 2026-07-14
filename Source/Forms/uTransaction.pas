@@ -51,6 +51,7 @@ type
 
     FEditMode: Boolean;
     FTransactionID: Integer;
+    procedure LoadTransaction;
 
     //procedure LoadCategories;
 
@@ -74,6 +75,29 @@ var
 implementation
 
 {$R *.dfm}
+
+procedure TfrmTransaction.LoadTransaction;
+var
+  D: TDate;
+  TType: Integer;
+  CatID: Integer;
+  Amt: Double;
+  Note: string;
+begin
+  FRepository.GetTransaction(
+    FTransactionID,
+    D,
+    TType,
+    CatID,
+    Amt,
+    Note);
+
+  dtDate.Date := D;
+  rgType.ItemIndex := TType;
+  cbCategory.KeyValue := CatID;
+  edtAmount.Text := FloatToStr(Amt);
+  memNote.Text := Note;
+end;
 
 procedure TfrmTransaction.FormShow(Sender: TObject);
 begin
@@ -105,23 +129,7 @@ begin
   edtAmount.Clear;
   memNote.Clear;
   if FEditMode then
-  begin
-  
-    FRepository.GetTransaction(
-        FTransactionID,
-        D,
-        TT,
-        CID,
-        A,
-        N);
-  
-    dtDate.Date := D;
-    rgType.ItemIndex := TT;
-    cbCategory.KeyValue := CID;
-    edtAmount.Text := FloatToStr(A);
-    memNote.Text := N;
-  
-  end;
+     LoadTransaction;
 end;
 
 procedure TfrmTransaction.LoadCategories;
@@ -152,23 +160,25 @@ end;
 procedure TfrmTransaction.btnSaveClick(Sender: TObject);
 var
   CategoryID: Integer;
+  Amount: Double;
 begin
-  if cbCategory.ItemIndex < 0 then
+
+  if cbCategory.KeyValue = Null then
   begin
     MessageDlg('Please select a category.',
-      mtWarning,[mbOK],0);
+      mtWarning, [mbOK], 0);
     Exit;
   end;
 
-  if Trim(edtAmount.Text) = '' then
+  if not TryStrToFloat(edtAmount.Text, Amount) then
   begin
-    MessageDlg('Please enter an amount.',
-      mtWarning,[mbOK],0);
+    MessageDlg('Please enter a valid amount.',
+      mtError, [mbOK], 0);
+    edtAmount.SetFocus;
     Exit;
   end;
 
   CategoryID := cbCategory.KeyValue;
-    //NativeInt(cbCategory.Items.Objects[cbCategory.ItemIndex]);
 
   if not FEditMode then
   begin
@@ -176,7 +186,7 @@ begin
       dtDate.Date,
       rgType.ItemIndex,
       CategoryID,
-      StrToFloat(edtAmount.Text),
+      Amount,            // <-- use the variable here
       memNote.Text);
   end
   else
@@ -186,7 +196,7 @@ begin
       dtDate.Date,
       rgType.ItemIndex,
       CategoryID,
-      StrToFloat(edtAmount.Text),
+      Amount,            // <-- and here
       memNote.Text);
   end;
 
