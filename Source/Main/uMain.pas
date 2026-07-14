@@ -16,59 +16,72 @@ uses
   Vcl.StdCtrls,
   Vcl.ExtCtrls,
   Vcl.DBGrids,
+
   Data.DB,
+
   FireDAC.Comp.Client,
 
   uDatabase,
-  uRepository;
+  uRepository,
+  uTransaction,
   uCategories;
-  uTransaction;
 
 type
   TfrmMain = class(TForm)
 
-    lblIncome : TLabel;
-    lblExpense : TLabel;
-    lblBalance : TLabel;
+    pnlTop: TPanel;
 
-    pnlTop : TPanel;
-    pnlButtons : TPanel;
+    lblIncomeTitle: TLabel;
+    lblExpenseTitle: TLabel;
+    lblBalanceTitle: TLabel;
 
-    DBGrid1 : TDBGrid;
+    lblIncome: TLabel;
+    lblExpense: TLabel;
+    lblBalance: TLabel;
 
-    btnAdd : TButton;
-    btnEdit : TButton;
-    btnDelete : TButton;
-    btnCategories : TButton;
-    btnBudget : TButton;
-    btnExit : TButton;
+    DBGrid1: TDBGrid;
 
-    dsTransactions : TDataSource;
+    pnlBottom: TPanel;
+
+    btnAdd: TButton;
+    btnEdit: TButton;
+    btnDelete: TButton;
+    btnCategories: TButton;
+    btnBudget: TButton;
+    btnReports: TButton;
+    btnExit: TButton;
+
+    dsTransactions: TDataSource;
+    qryTransactions: TFDQuery;
 
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
 
-    procedure btnExitClick(Sender: TObject);
     procedure btnAddClick(Sender: TObject);
     procedure btnEditClick(Sender: TObject);
     procedure btnDeleteClick(Sender: TObject);
+
     procedure btnCategoriesClick(Sender: TObject);
+
     procedure btnBudgetClick(Sender: TObject);
+    procedure btnReportsClick(Sender: TObject);
+
+    procedure btnExitClick(Sender: TObject);
 
   private
 
-    FDatabase : TDatabase;
-    FRepository : TRepository;
-    FQuery : TFDQuery;
+    FDatabase: TDatabase;
+    FRepository: TRepository;
 
     procedure RefreshDashboard;
+    procedure RefreshTotals;
 
   public
 
   end;
 
 var
-  frmMain : TfrmMain;
+  frmMain: TfrmMain;
 
 implementation
 
@@ -78,14 +91,13 @@ procedure TfrmMain.FormCreate(Sender: TObject);
 begin
 
   FDatabase := TDatabase.Create;
+
   FDatabase.Connect;
 
   FRepository := TRepository.Create(FDatabase);
 
-  FQuery := TFDQuery.Create(nil);
-  FQuery.Connection := FDatabase.Connection;
-
-  dsTransactions.DataSet := FQuery;
+  qryTransactions.Connection := FDatabase.Connection;
+  dsTransactions.DataSet := qryTransactions;
 
   RefreshDashboard;
 
@@ -94,7 +106,6 @@ end;
 procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
 
-  FQuery.Free;
   FRepository.Free;
   FDatabase.Free;
 
@@ -103,97 +114,128 @@ end;
 procedure TfrmMain.RefreshDashboard;
 begin
 
-  FRepository.GetTransactions(FQuery);
+  FRepository.GetTransactions(qryTransactions);
+
+  RefreshTotals;
+
+end;
+
+procedure TfrmMain.RefreshTotals;
+var
+  Y,M,D : Word;
+begin
+
+  DecodeDate(Date,Y,M,D);
 
   lblIncome.Caption :=
-    Format('Income : %.2f',
-      [FRepository.GetMonthlyIncome(YearOf(Date),MonthOf(Date))]);
+    FormatFloat(
+      '#,##0.00',
+      FRepository.GetMonthlyIncome(Y,M));
 
   lblExpense.Caption :=
-    Format('Expense : %.2f',
-      [FRepository.GetMonthlyExpense(YearOf(Date),MonthOf(Date))]);
+    FormatFloat(
+      '#,##0.00',
+      FRepository.GetMonthlyExpense(Y,M));
 
   lblBalance.Caption :=
-    Format('Balance : %.2f',
-      [FRepository.GetBalance]);
+    FormatFloat(
+      '#,##0.00',
+      FRepository.GetBalance);
 
 end;
 
 procedure TfrmMain.btnAddClick(Sender: TObject);
 begin
+
   frmTransaction := TfrmTransaction.Create(Self);
+
   try
+
     frmTransaction.Repository := FRepository;
     frmTransaction.EditMode := False;
 
     if frmTransaction.ShowModal = mrOK then
       RefreshDashboard;
+
   finally
     frmTransaction.Free;
   end;
+
 end;
 
 procedure TfrmMain.btnEditClick(Sender: TObject);
 begin
-  if FQuery.IsEmpty then
+
+  if qryTransactions.IsEmpty then
     Exit;
 
   frmTransaction := TfrmTransaction.Create(Self);
+
   try
+
     frmTransaction.Repository := FRepository;
+
     frmTransaction.EditMode := True;
+
     frmTransaction.TransactionID :=
-      FQuery.FieldByName('ID').AsInteger;
+      qryTransactions.FieldByName('ID').AsInteger;
 
     if frmTransaction.ShowModal = mrOK then
       RefreshDashboard;
+
   finally
     frmTransaction.Free;
   end;
+
 end;
 
 procedure TfrmMain.btnDeleteClick(Sender: TObject);
 begin
-  if FQuery.IsEmpty then
+
+  if qryTransactions.IsEmpty then
     Exit;
 
   if MessageDlg(
-       'Delete selected transaction?',
-       mtConfirmation,
-       [mbYes, mbNo],
-       0) <> mrYes then
-    Exit;
+      'Delete selected transaction?',
+      mtConfirmation,
+      [mbYes,mbNo],
+      0) <> mrYes then
+      Exit;
 
   FRepository.DeleteTransaction(
-    FQuery.FieldByName('ID').AsInteger);
+    qryTransactions.FieldByName('ID').AsInteger);
 
   RefreshDashboard;
+
 end;
 
 procedure TfrmMain.btnCategoriesClick(Sender: TObject);
 begin
+
   frmCategories := TfrmCategories.Create(Self);
+
   try
+
     frmCategories.Repository := FRepository;
 
     frmCategories.ShowModal;
 
     RefreshDashboard;
+
   finally
     frmCategories.Free;
   end;
+
 end;
 
 procedure TfrmMain.btnBudgetClick(Sender: TObject);
 begin
-  //ShowMessage('Not implemented yet.');
-  frmCategories := TfrmCategories.Create(Self);
-  try
-    frmCategories.Repository := FRepository;
-    frmCategories.ShowModal;
-  finally
-    frmCategories.Free;
-  end;
+  ShowMessage('Budget form not implemented yet.');
+end;
+
+procedure TfrmMain.btnReportsClick(Sender: TObject);
+begin
+  ShowMessage('Reports form not implemented yet.');
 end;
 
 procedure TfrmMain.btnExitClick(Sender: TObject);
