@@ -121,21 +121,16 @@ end;
 
 procedure TfrmMain.btnAddClick(Sender: TObject);
 begin
-
   frmTransaction := TfrmTransaction.Create(Self);
-
   try
-
     frmTransaction.Repository := FRepository;
     frmTransaction.EditMode := False;
 
     if frmTransaction.ShowModal = mrOK then
       RefreshDashboard;
-
   finally
     frmTransaction.Free;
   end;
-
 end;
 
 procedure TfrmMain.btnEditClick(Sender: TObject);
